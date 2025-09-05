@@ -6,12 +6,12 @@
 Displays what weapon skill (WS) or ability to use next to build or close a skillchain. Shows a timer, current step, possible next actions, and elements for magic bursts.
 
 ## Prema Weapon Detection
-If you equip a Prema weapon listed in the addon’s `prema_weapon` table:
+If you equip a Prema weapon:
 
 - Automatically detects by matching the item ID of your main or ranged weapon.
-- Flags it as Aeonic in `info.aeonic`.
-- Adds Aeonic skillchain properties to your WS (extra Radiance or Umbra tier).
-- Colors WS in the list by Aeonic tier:
+- Flags it as either Relic, Mythic, Empyrean, Pulse, Aeonic or Prime.
+- Adds Aeonic skillchain properties to your WS (extra Radiance or Umbra tier) when aeonic weapon is equpped.
+- Colors WS in the list by scillchain tier it would create, when wearing a Prema weapon:
   - **Tier 1** = yellow  
   - **Tier 2** = orange  
   - **Tier 3** = red
@@ -58,9 +58,9 @@ sc test Fusion
 
 ## Tips
 - Overlay shows only when an SC window is active or in test mode.
-- Aeonic weapons are auto-detected.
+- Prema weapons are auto-detected.
 - Move overlay with `move`, then save.
-- Requires correct `skills.lua`.
+- Requires correct updated `skills.lua`. found here.
 
 ## Credits
 - **Ivaar** — Original author  
