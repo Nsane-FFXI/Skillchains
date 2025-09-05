@@ -1,4 +1,4 @@
-
+<img width="291" height="199" alt="sc" src="https://github.com/user-attachments/assets/76e816c8-741f-488e-a5ab-26d85b7d4501" />
 
 # Skillchains Addon (Windower)
 
