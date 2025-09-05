@@ -1,4 +1,6 @@
 <img width="291" height="199" alt="sc" src="https://github.com/user-attachments/assets/76e816c8-741f-488e-a5ab-26d85b7d4501" />
+<img width="293" height="143" alt="6" src="https://github.com/user-attachments/assets/81bed8a2-38d4-4c37-bdd0-b31f2a760798" />
+
 
 # Skillchains Addon (Windower)
 
