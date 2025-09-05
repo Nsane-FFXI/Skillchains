@@ -13,7 +13,7 @@ If you equip a Prema weapon:
 - Automatically detects by matching the item ID of your main or ranged weapon.
 - Flags it as either Relic, Mythic, Empyrean, Pulse, Aeonic or Prime.
 - Adds Aeonic skillchain properties to your WS (extra Radiance or Umbra tier) when aeonic weapon is equpped.
-- Colors WS in the list by scillchain tier it would create, when wearing a Prema weapon:
+- Colors WS in the list by skillchain tier it would create, when wearing a Prema weapon:
   - **Tier 1** = yellow  
   - **Tier 2** = orange  
   - **Tier 3** = red
