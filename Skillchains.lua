@@ -72,7 +72,7 @@ colors.Liquefaction		= colors.Fire
 colors.Impaction		= colors.Lightning
 
 -- Color helpers ---------------------------------------------------------------
-local function AEONIC_TIER_COLOR(lv)
+local function PREMA_TIER_COLOR(lv)
     if lv >= 3 then return		'\\cs(255,51,51)'
     elseif lv == 2 then return	'\\cs(255,153,51)'
     else return					'\\cs(255,255,102)'
@@ -236,6 +236,13 @@ local AEONIC_NAMES = S{
   'Fomalhaut','Lionheart','Tri-edge','Fail-Not'
 }
 
+local prema_id_set = {}
+for name, ids in pairs(prema_weapon) do
+    for i=1,#ids do
+        prema_id_set[ids[i]] = true
+    end
+end
+
 local aeonic_id_set = {}
 for name, ids in pairs(prema_weapon) do
     if AEONIC_NAMES[name] then
@@ -280,24 +287,38 @@ local check_weapon
 local function update_weapon()
     if not settings.Show.weapon[info.job] then return end
 
+    info.prema_name = nil
+    info.has_prema  = false
     info.aeonic_name = nil
-    info.has_aeonic = false
+    info.has_aeonic  = false
 
     local main = windower.ffxi.get_items(info.main_bag, info.main_weapon)
     local main_id = main and main.id or 0
-    if main_id ~= 0 and aeonic_id_set[main_id] then
-        info.has_aeonic = true
-        info.aeonic_name = aeonic_index[main_id]
-        return
+    if main_id ~= 0 then
+        local name = aeonic_index[main_id]  -- maps all Prema ids to their names
+        if prema_id_set[main_id] then
+            info.has_prema = true
+            info.prema_name = name
+        end
+        if aeonic_id_set[main_id] then
+            info.has_aeonic = true
+            info.aeonic_name = name
+        end
     end
 
     if info.range and info.range_bag then
         local r = windower.ffxi.get_items(info.range_bag, info.range)
         local range_id = r and r.id or 0
-        if range_id ~= 0 and aeonic_id_set[range_id] then
-            info.has_aeonic = true
-            info.aeonic_name = aeonic_index[range_id]
-            return
+        if range_id ~= 0 then
+            local name = aeonic_index[range_id]
+            if not info.has_prema and prema_id_set[range_id] then
+                info.has_prema = true
+                info.prema_name = name
+            end
+            if not info.has_aeonic and aeonic_id_set[range_id] then
+                info.has_aeonic = true
+                info.aeonic_name = name
+            end
         end
     end
 
@@ -352,8 +373,8 @@ local function add_skills(t, abilities, active, resource, AM)
 
                 local name_raw   = res[resource][ability_id].name
                 local name_field = ('%-16s'):format(name_raw)
-                if settings.color and info.has_aeonic and skillchain.weapon == info.aeonic_name then
-					name_field = ("%s%s\\cr"):format(AEONIC_TIER_COLOR(lv), name_field)
+				if settings.color and info.has_prema and skillchain.weapon == info.prema_name then
+					name_field = ("%s%s\\cr"):format(PREMA_TIER_COLOR(lv), name_field)
 				end
 
                 if settings.color then
@@ -491,15 +512,12 @@ local function apply_preview(resource, action_id, properties, delay, step, close
     next_frame = clock
 end
 
-local targ_id
-
 local function apply_properties(target, resource, action_id, properties, delay, step, closed, bound, display_name)
     local clock = os.clock()
     resonating[target] = {
         res=resource, id=action_id, active=properties, delay=clock+delay, times=clock+delay+8-step,
         step=step, closed=closed, bound=bound, display_name=display_name,
     }
-    if target == targ_id then next_frame = clock end
 end
 
 local function action_handler(act)
