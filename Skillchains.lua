@@ -1,7 +1,7 @@
 _addon.author  = 'Ivaar, Additional features by Nsane'
 _addon.command = 'sc'
 _addon.name    = 'Skillchains'
-_addon.version = '2025.9.2'
+_addon.version = '2025.9.19'
 
 -- Dependencies (Windower environment)
 require('luau')
@@ -37,6 +37,16 @@ local BUFF_DUR        = {[163]=40,[164]=30,[470]=60}
 local info        = {}
 local resonating  = {}
 local buffs       = {}
+
+-- invalidate cached display when AM state flips --------------------------------
+local function invalidate_disp_info()
+    for _, r in pairs(resonating) do
+        if type(r) == 'table' then
+            r.disp_info = nil
+            r.elements  = nil
+        end
+    end
+end
 
 -- Colors ---------------------------------------------------------------------
 local colors = {
@@ -220,6 +230,21 @@ local prema_weapon = {
     ['Pinaka']={22156,22157,22158,22163}, ['Earp']={22160,22161,22162,22164},
 }
 
+local AEONIC_NAMES = S{
+  'Godhands','Aeneas','Sequence','Chango','Anguta','Trishula',
+  'Heishi Shorinken','Dojikiri Yasutsuna','Tishtrya','Khatvanga',
+  'Fomalhaut','Lionheart','Tri-edge','Fail-Not'
+}
+
+local aeonic_id_set = {}
+for name, ids in pairs(prema_weapon) do
+    if AEONIC_NAMES[name] then
+        for i=1,#ids do
+            aeonic_id_set[ids[i]] = true
+        end
+    end
+end
+
 local aeonic_index = {}
 for name, ids in pairs(prema_weapon) do
     for i = 1, #ids do
@@ -250,28 +275,32 @@ end
 skill_props:register_event('reload', initialize)
 
 -- Aeonic support --------------------------------------------------------------
-local check_weapon -- coroutine ref
+local check_weapon
 
 local function update_weapon()
     if not settings.Show.weapon[info.job] then return end
 
+    info.aeonic_name = nil
+    info.has_aeonic = false
+
     local main = windower.ffxi.get_items(info.main_bag, info.main_weapon)
     local main_id = main and main.id or 0
-    if main_id ~= 0 then
-        info.aeonic = aeonic_index[main_id]
-        if info.aeonic then return end
+    if main_id ~= 0 and aeonic_id_set[main_id] then
+        info.has_aeonic = true
+        info.aeonic_name = aeonic_index[main_id]
+        return
     end
 
     if info.range and info.range_bag then
         local r = windower.ffxi.get_items(info.range_bag, info.range)
         local range_id = r and r.id or 0
-        if range_id ~= 0 then
-            info.aeonic = aeonic_index[range_id]
-            if info.aeonic then return end
+        if range_id ~= 0 and aeonic_id_set[range_id] then
+            info.has_aeonic = true
+            info.aeonic_name = aeonic_index[range_id]
+            return
         end
     end
 
-    info.aeonic = nil
     if not check_weapon or coroutine.status(check_weapon) ~= 'suspended' then
         check_weapon = coroutine.schedule(update_weapon, 10)
     end
@@ -287,7 +316,7 @@ local function aeonic_am(step)
 end
 
 local function aeonic_prop(ability, actor)
-    if ability.aeonic and ((ability.weapon == info.aeonic and actor == info.player) or (settings.aeonic and info.player ~= actor)) then
+    if ability.aeonic and info.has_aeonic and ability.weapon == info.aeonic_name and actor == info.player then
         return {ability.skillchain[1], ability.skillchain[2], ability.aeonic}
     end
     return ability.skillchain
@@ -323,9 +352,9 @@ local function add_skills(t, abilities, active, resource, AM)
 
                 local name_raw   = res[resource][ability_id].name
                 local name_field = ('%-16s'):format(name_raw)
-                if settings.color and info.aeonic and skillchain.weapon == info.aeonic then
-                    name_field = ("%s%s\\cr"):format(AEONIC_TIER_COLOR(lv), name_field)
-                end
+                if settings.color and info.has_aeonic and skillchain.weapon == info.aeonic_name then
+					name_field = ("%s%s\\cr"):format(AEONIC_TIER_COLOR(lv), name_field)
+				end
 
                 if settings.color then
                     local grad = prop_grad_palette[prop]
@@ -358,7 +387,7 @@ local function colorize(t)
             end
         end
     else
-        for k=1,#t do out[#out+1] = t[k] end
+        for k=1,#t do out[k] = t[k] end
     end
     return table.concat(out, ',')
 end
@@ -373,7 +402,8 @@ local function check_results(reson)
         t = add_skills(t, windower.ffxi.get_abilities().job_abilities, reson.active, 'job_abilities')
     end
     if settings.Show.weapon[info.job] then
-        t = add_skills(t, windower.ffxi.get_abilities().weapon_skills, reson.active, 'weapon_skills', info.aeonic and aeonic_am(reson.step))
+		t = add_skills(t, windower.ffxi.get_abilities().weapon_skills, reson.active, 'weapon_skills',
+               info.has_aeonic and aeonic_am(reson.step))
     end
     return _raw.table.concat(t, '\n')
 end
@@ -461,7 +491,7 @@ local function apply_preview(resource, action_id, properties, delay, step, close
     next_frame = clock
 end
 
-local targ_id -- forward-declared for action handler reuse
+local targ_id
 
 local function apply_properties(target, resource, action_id, properties, delay, step, closed, bound, display_name)
     local clock = os.clock()
@@ -513,7 +543,10 @@ ActionPacket.open_listener(action_handler)
 -- Network hooks ---------------------------------------------------------------
 windower.register_event('incoming chunk', function(id, data)
     if id == 0x29 and data:unpack('H', 25) == 206 and data:unpack('I', 9) == info.player then
-        if buffs[info.player] then buffs[info.player][data:unpack('H', 13)] = nil end
+        -- buff loss
+        local lost = data:unpack('H', 13)
+        if buffs[info.player] then buffs[info.player][lost] = nil end
+        if lost >= 270 and lost <= 272 then invalidate_disp_info() end
 
     elseif id == 0x50 and data:byte(6) == 0 then
         info.main_weapon = data:byte(5)
@@ -532,6 +565,8 @@ windower.register_event('incoming chunk', function(id, data)
             if BUFF_DUR[buff] or (buff > 269 and buff < 273) then set_buff[buff] = true end
         end
         buffs[info.player] = set_buff
+        -- AM presence may have changed. Force a redraw.
+        invalidate_disp_info()
     end
 end)
 
