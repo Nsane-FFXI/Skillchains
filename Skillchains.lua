@@ -459,11 +459,11 @@ windower.register_event('prerender', function()
         if not reson.closed then
             reson.disp_info = reson.disp_info or check_results(reson)
             local delay = reson.delay
-            reson.timer = now < delay and '\\cs(255,0,0)Wait  %.1f\\cr':format(delay - now)
-                                       or '\\cs(0,255,0)Go!   %.1f\\cr':format(timer)
+            reson.timer = now < delay and ('\\cs(255,0,0)Wait  %.1f\\cr'):format(delay - now)
+                                       or ('\\cs(0,255,0)Go!   %.1f\\cr'):format(timer)
         elseif settings.Show.burst[info.job] then
             reson.disp_info = ''
-            reson.timer = 'Burst %d':format(timer)
+            reson.timer = ('Burst %d'):format(timer)
         else
             if targ_id and resonating[targ_id] == reson then
                 resonating[targ_id] = nil
@@ -728,7 +728,7 @@ windower.register_event('addon command', function(cmd, ...)
         end
 
     elseif cmd == 'save' then
-        local arg = ... and ...:lower() == 'all' and 'all'
+        local arg = ... and (...):lower() == 'all' and 'all'
         config.save(settings, arg)
         windower.add_to_chat(207, ('%s: settings saved to %s character%s.'):format(_addon.name, arg or 'current', arg and 's' or ''))
 
